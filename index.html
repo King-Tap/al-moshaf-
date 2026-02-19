@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المصحف الشامل وحصن المسلم</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f0f4f8; }
+        .quran-page { font-family: 'Amiri', serif; line-height: 2.3; font-size: 1.8rem; text-align: justify; }
+        .zekr-card { background: white; border-radius: 1.5rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-right: 6px solid #065f46; margin-bottom: 1.5rem; transition: 0.3s; }
+        .ayah-num { font-family: sans-serif; font-size: 0.85rem; color: #065f46; border: 1px solid #065f46; border-radius: 50%; padding: 2px 6px; margin: 0 4px; }
+        .active-tab { background-color: #065f46 !important; color: white !important; transform: scale(1.05); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<div id="app" class="flex flex-col min-h-screen">
+    <header class="bg-emerald-900 text-white p-4 sticky top-0 z-50 shadow-lg flex justify-between items-center">
+        <h1 class="text-xl font-bold flex items-center gap-2">✨ مصحفي</h1>
+        <div class="flex gap-2 bg-emerald-800 p-1 rounded-2xl">
+            <button @click="view = 'quran'" :class="view === 'quran' || view === 'reading' ? 'active-tab' : ''" class="px-4 py-2 rounded-xl text-sm font-bold transition">المصحف</button>
+            <button @click="view = 'azkar'" :class="view === 'azkar' ? 'active-tab' : ''" class="px-4 py-2 rounded-xl text-sm font-bold transition">الأذكار</button>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto p-4 max-w-3xl">
+        
+        <div v-if="view === 'quran'">
+            <input v-model="search" type="text" placeholder="ابحث عن سورة..." class="w-full p-4 mb-6 rounded-2xl border-none shadow-inner bg-white outline-none focus:ring-2 focus:ring-emerald-500">
+            <div v-if="loading" class="text-center py-10">جاري تحميل الفهرس...</div>
+            <div v-else class="grid gap-3">
+                <div v-for="s in filteredSurahs" :key="s.number" @click="loadSurah(s.number)" class="bg-white p-4 rounded-xl shadow-sm cursor-pointer hover:bg-emerald-50 border-r-4 border-emerald-600 flex justify-between items-center transition">
+                    <span class="font-bold text-lg">{{ s.number }}. {{ s.name }}</span>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">{{ s.numberOfAyahs }} آية</span>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="view === 'reading' && selectedSurah" class="bg-white p-8 rounded-3xl shadow-xl">
+            <div class="text-center mb-10 pb-6 border-b">
+                <h2 class="text-4xl font-bold text-emerald-900">{{ selectedSurah.name }}</h2>
+                <div class="text-2xl text-emerald-600 mt-6 font-serif" v-if="selectedSurah.number !== 1 && selectedSurah.number !== 9">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+            </div>
+            <div class="quran-page text-gray-800">
+                <span v-for="ayah in selectedSurah.ayahs">
+                    {{ ayah.text }} <span class="ayah-num">{{ ayah.numberInSurah }}</span>
+                </span>
+            </div>
+            <button @click="view = 'quran'" class="w-full mt-10 py-4 bg-emerald-50 text-emerald-800 rounded-2xl font-bold border border-emerald-100 hover:bg-emerald-100 transition">العودة للفهرس</button>
+        </div>
+
+        <div v-if="view === 'azkar'">
+            <div class="flex flex-wrap gap-2 mb-8 justify-center">
+                <button v-for="cat in Object.keys(azkarData)" @click="currentCat = cat" :class="currentCat === cat ? 'active-tab' : 'bg-white text-emerald-800'" class="px-5 py-2 rounded-full text-sm font-bold shadow-sm transition-all border border-emerald-100">{{ cat }}</button>
+            </div>
+
+            <div v-for="(zekr, index) in azkarData[currentCat]" :key="index" class="zekr-card">
+                <p class="text-xl leading-relaxed text-gray-800 font-medium">{{ zekr.text }}</p>
+                <div v-if="zekr.hint" class="mt-3 text-sm text-emerald-700 bg-emerald-50 p-2 rounded-lg italic">
+                    {{ zekr.hint }}
+                </div>
+                <div class="mt-6 flex justify-between items-center">
+                    <span class="text-sm font-bold text-gray-400">العدد المطلوب: {{ zekr.repeat }}</span>
+                    <button @click="decrementZekr(index)" :class="zekr.count === 0 ? 'bg-gray-200 text-gray-400' : 'bg-emerald-600 text-white'" class="min-w-[80px] h-12 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
+                        <span v-if="zekr.count > 0">{{ zekr.count }}</span>
+                        <span v-else>✅ تم</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+const { createApp, ref, onMounted, computed } = Vue;
+
+createApp({
+    setup() {
+        const view = ref('quran');
+        const search = ref('');
+        const loading = ref(true);
+        const allSurahs = ref([]);
+        const selectedSurah = ref(null);
+        const currentCat = ref('أذكار الصباح');
+
+        const azkarData = ref({
+            'أذكار الصباح': [
+                { text: 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لاَ إِلَهَ إِلاَّ اللَّهُ وَحْدَهُ لاَ شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَذَا الْيَوْمِ وَخَيْرَ مَا بَعْدَهُ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَذَا الْيَوْمِ وَشَرِّ مَا بَعْدَهُ، رَبِّ أَعُوذُ بِكَ مِنَ الْكَسَلِ، وَسُوءِ الْكِبَرِ، رَبِّ أَعُوذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ.', repeat: 1, count: 1, hint: '' },
+                { text: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ لَكَ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ.', repeat: 1, count: 1, hint: 'سيد الاستغفار: من قالها موقنا بها حين يصبح فمات من يومه دخل الجنة' },
+                { text: 'يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ أَصْلِحْ لِي شَأْنِي كُلَّهُ وَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ.', repeat: 1, count: 1, hint: '' },
+                { text: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ.', repeat: 3, count: 3, hint: 'لم يضره شيء' }
+            ],
+            'أذكار المساء': [
+                { text: 'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لاَ إِلَهَ إِلاَّ اللَّهُ وَحْدَهُ لاَ شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.', repeat: 1, count: 1, hint: '' },
+                { text: 'اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ الْمَصِيرُ.', repeat: 1, count: 1, hint: '' },
+                { text: 'أَعُوذُ بِكَلِمَاتِ اللهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ.', repeat: 3, count: 3, hint: 'من قالها حين يمسي لم تضره حمة تلك ليلة' }
+            ],
+            'أذكار النوم': [
+                { text: 'بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي، وَبِكَ أَرْفَعُهُ، فَإِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا، بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ.', repeat: 1, count: 1, hint: '' },
+                { text: 'اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ.', repeat: 3, count: 3, hint: 'يقال عند وضع اليد اليمنى تحت الخد' }
+            ],
+            'بعد الصلاة': [
+                { text: 'أستغفر الله، أستغفر الله، أستغفر الله. اللهم أنت السلام ومنك السلام تباركت يا ذا الجلال والإكرام.', repeat: 1, count: 1, hint: '' },
+                { text: 'سُبْحَانَ اللهِ (33)، الْحَمْدُ لِلهِ (33)، اللهُ أَكْبَرُ (33). لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير.', repeat: 1, count: 1, hint: 'تغفر خطاياه وإن كانت مثل زبد البحر' }
+            ]
+        });
+
+        onMounted(async () => {
+            try {
+                const res = await fetch('https://api.alquran.cloud/v1/surah');
+                const data = await res.json();
+                allSurahs.value = data.data;
+            } finally { loading.value = false; }
+        });
+
+        const loadSurah = async (num) => {
+            loading.value = true;
+            try {
+                const res = await fetch(`https://api.alquran.cloud/v1/surah/${num}/quran-uthmani`);
+                const data = await res.json();
+                selectedSurah.value = data.data;
+                view.value = 'reading';
+                window.scrollTo(0,0);
+            } finally { loading.value = false; }
+        };
+
+        const decrementZekr = (index) => {
+            const zekr = azkarData.value[currentCat.value][index];
+            if (zekr.count > 0) zekr.count--;
+        };
+
+        const filteredSurahs = computed(() => allSurahs.value.filter(s => s.name.includes(search.value)));
+
+        return { view, search, loading, allSurahs, selectedSurah, loadSurah, azkarData, currentCat, decrementZekr, filteredSurahs };
+    }
+}).mount('#app');
+</script>
+</body>
+</html>
