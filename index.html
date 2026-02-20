@@ -3,48 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>المصحف الشامل</title>
+    <title>مصحف الأوفلاين المضمون</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@500;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri&family=Tajawal:wght@500;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; }
-        .quran-font { font-family: 'Amiri', serif; line-height: 2.5; text-align: justify; font-size: 1.8rem; }
-        [v-cloak] { display: none; } /* يمنع ظهور الأكواد قبل تحميل الصفحة */
+        [v-cloak] { display: none !important; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #f0f2f5; }
+        .quran-text { font-family: 'Amiri', serif; line-height: 2.5; font-size: 1.8rem; text-align: justify; }
+        .btn-main { background-color: #064e3b; color: white; padding: 12px; border-radius: 12px; font-weight: bold; width: 100%; transition: 0.3s; }
+        .card { background: white; border-radius: 16px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-right: 5px solid #064e3b; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-<div id="app" v-cloak class="flex flex-col h-screen">
-    <header class="bg-[#064e3b] text-white p-4 flex justify-between items-center shadow-lg">
-        <h1 class="font-bold text-lg">📖 المصحف (بدون نت)</h1>
-        <button v-if="!isDownloaded" @click="downloadQuran" :disabled="loading" class="bg-yellow-500 text-black text-[10px] px-3 py-1 rounded-full font-bold">
-            {{ loading ? 'جاري التحميل...' : 'تنزيل المصحف' }}
-        </button>
+<div id="app" v-cloak>
+    <header class="bg-[#064e3b] text-white p-4 sticky top-0 z-50 flex justify-between items-center">
+        <h1 class="font-bold">📖 مصحف الأوفلاين</h1>
+        <div class="flex gap-2">
+            <button @click="view = 'index'" class="text-xs bg-[#053e2f] px-3 py-1 rounded-lg">المصحف</button>
+            <button @click="view = 'azkar'" class="text-xs bg-[#053e2f] px-3 py-1 rounded-lg">الأذكار</button>
+        </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto p-4">
-        <div v-if="!isDownloaded && view === 'index'" class="bg-white p-4 rounded-xl shadow mb-4 text-center border-2 border-yellow-400">
-            <p class="text-sm mb-2">اضغط للتحميل لمرة واحدة فقط ليعمل التطبيق بدون إنترنت</p>
+    <main class="p-4 max-w-xl mx-auto">
+        <div v-if="!isDownloaded && view === 'index'" class="bg-white border-2 border-yellow-500 p-4 rounded-2xl mb-6 text-center shadow-lg">
+            <p class="mb-3 font-bold text-yellow-800 text-sm">التطبيق يحتاج لتحميل البيانات مرة واحدة (4MB)</p>
+            <button @click="downloadFullQuran" :disabled="loading" class="bg-yellow-500 text-black font-bold px-6 py-3 rounded-xl w-full active:scale-95 transition">
+                {{ loading ? 'جاري التحميل... انتظر' : 'بدء التحميل للعمل بدون نت' }}
+            </button>
         </div>
 
         <div v-if="view === 'index'">
-            <input v-model="search" type="text" placeholder="ابحث عن سورة..." class="w-full p-4 mb-4 rounded-xl border-none shadow-sm outline-none focus:ring-2 focus:ring-emerald-500">
-            <div class="grid gap-2">
-                <div v-for="s in filteredSurahs" :key="s.number" @click="openSurah(s)" class="bg-white p-4 rounded-xl shadow-sm border-r-4 border-[#064e3b] flex justify-between items-center">
-                    <span class="font-bold">{{ s.number }}. {{ s.name }}</span>
-                    <span v-if="isDownloaded" class="text-[10px] text-emerald-600">جاهز أوفلاين ✅</span>
+            <input v-model="search" type="text" placeholder="ابحث عن سورة..." class="w-full p-4 mb-4 rounded-xl border-none shadow-inner outline-none focus:ring-2 focus:ring-emerald-500">
+            <div v-for="s in filteredSurahs" :key="s.number" @click="openSurah(s)" class="card cursor-pointer hover:bg-emerald-50 transition">
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-bold">{{ s.number }}. {{ s.name }}</span>
+                    <span v-if="isDownloaded" class="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-1 rounded">أوفلاين ✅</span>
                 </div>
             </div>
         </div>
 
-        <div v-if="view === 'reading' && currentSurah" class="bg-white p-6 rounded-2xl shadow-lg">
+        <div v-if="view === 'reading' && currentSurah" class="bg-white p-6 rounded-3xl shadow-xl border border-gray-100">
             <h2 class="text-3xl font-bold text-center text-emerald-900 mb-6">{{ currentSurah.name }}</h2>
-            <div class="quran-font text-gray-800">
-                <span v-for="ayah in currentSurah.ayahs" :key="ayah.numberInSurah">
-                    {{ ayah.text }} <span class="inline-flex items-center justify-center w-8 h-8 rounded-full border border-emerald-200 text-sm mx-1">{{ ayah.numberInSurah }}</span>
+            <div class="quran-text">
+                <span v-for="ayah in currentSurah.ayahs">
+                    {{ ayah.text }} <span class="text-sm border border-emerald-200 rounded-full px-1 mx-1">{{ ayah.numberInSurah }}</span>
                 </span>
             </div>
-            <button @click="view = 'index'" class="w-full mt-10 p-4 bg-gray-100 rounded-xl font-bold text-gray-500">العودة للفهرس</button>
+            <button @click="view = 'index'" class="btn-main mt-8 bg-gray-200 !text-gray-600">عودة للفهرس</button>
+        </div>
+
+        <div v-if="view === 'azkar'" class="space-y-4">
+            <h2 class="text-xl font-bold text-emerald-900 mb-4 border-b pb-2">حصن المسلم</h2>
+            <div v-for="z in azkar" class="card">
+                <p class="text-lg leading-relaxed text-gray-800">{{ z.text }}</p>
+                <div class="mt-4 flex justify-between items-center">
+                    <span class="text-xs font-bold text-emerald-600">التكرار: {{ z.repeat }}</span>
+                    <button @click="z.count > 0 ? z.count-- : null" :class="z.count === 0 ? 'bg-gray-100' : 'bg-emerald-500 text-white'" class="w-10 h-10 rounded-full font-bold">
+                        {{ z.count === 0 ? '✅' : z.count }}
+                    </button>
+                </div>
+            </div>
         </div>
     </main>
 </div>
@@ -55,20 +74,21 @@ createApp({
     setup() {
         const view = ref('index');
         const search = ref('');
-        const surahs = ref([]);
-        const currentSurah = ref(null);
         const loading = ref(false);
         const isDownloaded = ref(localStorage.getItem('quran_ready') === 'true');
+        const surahs = ref([]);
+        const currentSurah = ref(null);
+
+        // نصوص الأذكار كاملة (محفوظة داخل الكود لتعمل بدون نت)
+        const azkar = ref([
+            { text: 'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لاَ إِلَهَ إِلاَّ اللَّهُ وَحْدَهُ لاَ شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ.', repeat: 1, count: 1 },
+            { text: 'اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عهدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ لَكَ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ.', repeat: 1, count: 1 },
+            { text: 'بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ.', repeat: 3, count: 3 }
+        ]);
 
         onMounted(async () => {
-            // تحميل البيانات المخزنة فوراً عند فتح التطبيق
             if (isDownloaded.value) {
-                try {
-                    surahs.value = JSON.parse(localStorage.getItem('quran_content'));
-                } catch (e) {
-                    isDownloaded.value = false;
-                    fetchIndex();
-                }
+                surahs.value = JSON.parse(localStorage.getItem('quran_content'));
             } else {
                 fetchIndex();
             }
@@ -79,10 +99,10 @@ createApp({
                 const res = await fetch('https://api.alquran.cloud/v1/surah');
                 const data = await res.json();
                 surahs.value = data.data;
-            } catch (e) { console.log("Offline mode"); }
+            } catch (e) { console.log("Offline Mode Active"); }
         };
 
-        const downloadQuran = async () => {
+        const downloadFullQuran = async () => {
             loading.value = true;
             try {
                 const res = await fetch('https://api.alquran.cloud/v1/quran/quran-uthmani');
@@ -91,34 +111,34 @@ createApp({
                 localStorage.setItem('quran_ready', 'true');
                 surahs.value = data.data.surahs;
                 isDownloaded.value = true;
-                alert("تم التحميل بنجاح! التطبيق سيعمل الآن بدون نت.");
-            } catch (e) { alert("تأكد من النت قبل التحميل"); }
-            loading.value = false;
+                alert("تم التحميل! التطبيق سيعمل الآن أوفلاين بالكامل.");
+            } catch (e) {
+                alert("فشل التحميل. تأكد من الإنترنت وحاول مجدداً.");
+            } finally { loading.value = false; }
         };
 
         const openSurah = (s) => {
-            // التأكد من أن السورة تحتوي على آيات (سواء من النت أو المخزن)
             if (isDownloaded.value) {
                 currentSurah.value = s;
                 view.value = 'reading';
             } else {
                 loading.value = true;
                 fetch(`https://api.alquran.cloud/v1/surah/${s.number}/quran-uthmani`)
-                    .then(res => res.json())
-                    .then(data => {
-                        currentSurah.value = data.data;
-                        view.value = 'reading';
-                        loading.value = false;
-                    });
+                .then(r => r.json()).then(d => {
+                    currentSurah.value = d.data;
+                    view.value = 'reading';
+                    loading.value = false;
+                });
             }
             window.scrollTo(0,0);
         };
 
         const filteredSurahs = computed(() => surahs.value.filter(s => s.name.includes(search.value)));
 
-        return { view, search, surahs, currentSurah, loading, isDownloaded, downloadQuran, openSurah, filteredSurahs };
+        return { view, search, loading, isDownloaded, surahs, currentSurah, azkar, downloadFullQuran, openSurah, filteredSurahs };
     }
 }).mount('#app');
 </script>
 </body>
 </html>
+
