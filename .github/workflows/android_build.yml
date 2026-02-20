@@ -19,11 +19,12 @@ jobs:
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-      - name: Prepare Capacitor
+      - name: Create Web Assets
         run: |
           mkdir -p www
           cp index.html www/
-          npx cap init "MyQuranApp" "com.myquran.app" --web-dir www
+          # تأكد من عدم وجود نقاط في اسم التطبيق لتجنب الأخطاء
+          npx cap init "QuranApp" "com.quran.offline" --web-dir www
           npx cap add android
 
       - name: Build Android
@@ -32,7 +33,7 @@ jobs:
           cd android && ./gradlew assembleDebug
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4 # تم التحديث للنسخة 4
         with:
           name: My-Quran-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
