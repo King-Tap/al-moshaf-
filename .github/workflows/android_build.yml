@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Quran App APK
 on:
   push:
     branches: [ main ]
@@ -15,29 +15,29 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Tools
+      - name: Install Capacitor & Assets Tool
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
           
-      - name: Initialize and Fix Icon Structure
+      - name: Initialize App & Setup Icons
         run: |
           mkdir -p www
           cp index.html www/
-          # مبادرة المشروع
+          # مبادرة المشروع باسم الحزمة com.quran.offline
           npx cap init "QuranApp" "com.quran.offline" --web-dir www
           npx cap add android
           
-          # توليد الأيقونات بشكل احترافي يحل مشكلة الـ XML التي واجهتها في Apktool
-          # هذا الأمر سيقوم بمسح الأيقونات القديمة ووضع أيقونتك مكانها في كل المسارات
-          npx capacitor-assets generate --android
+          # الجزء الأهم: استبدال كافة الأيقونات المعقدة بصورتك مباشرة
+          # هذا السطر يحل مشكلة الـ XML التي سببت أخطاء في التطبيقات الأخرى
+          npx capacitor-assets generate --android --icon icon.png
 
-      - name: Build Android
+      - name: Build Android APK
         run: |
           npx cap copy
           cd android && ./gradlew assembleDebug
 
-      - name: Upload APK
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: My-Quran-App
+          name: Quran-Offline-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
