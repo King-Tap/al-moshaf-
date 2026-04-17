@@ -15,11 +15,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Dependencies
+      - name: Install Tools
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
           
-      - name: Create Web Assets and Generate Icons
+      - name: Initialize and Fix Icon Structure
         run: |
           mkdir -p www
           cp index.html www/
@@ -27,8 +27,8 @@ jobs:
           npx cap init "QuranApp" "com.quran.offline" --web-dir www
           npx cap add android
           
-          # توليد الأيقونات وصور التشغيل (Splash Screen) تلقائياً من ملف icon.png
-          # هذه الخطوة ستقوم بإنشاء كافة المقاسات داخل مجلد أندرويد
+          # توليد الأيقونات بشكل احترافي يحل مشكلة الـ XML التي واجهتها في Apktool
+          # هذا الأمر سيقوم بمسح الأيقونات القديمة ووضع أيقونتك مكانها في كل المسارات
           npx capacitor-assets generate --android
 
       - name: Build Android
