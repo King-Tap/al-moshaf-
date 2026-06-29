@@ -23,7 +23,7 @@ jobs:
         run: |
           mkdir -p www
           cp index.html www/
-          npx cap init "قرآن بدون نت" "com.quran.offline" --web-dir www
+          npx cap init "قرآن بدون نت" "com.qatan.quraniffline" --web-dir www
           npx cap add android
           
           # مسح أيقونات الأندرويد الافتراضية تماماً
