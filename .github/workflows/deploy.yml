@@ -68,10 +68,10 @@ jobs:
             -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEYALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
 
-      - name: Upload to Google Play (الرفع التلقائي لحساب المتجر)
+            - name: Upload to Google Play (الرفع التلقائي لحساب المتجر)
         uses: r0adkll/upload-google-play@v1
         with:
-          serviceAccountJsonRaw: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          serviceAccountJson: ${{ secrets.PLAY_STORE_JSON_KEY }}
           packageName: "com.quran.offline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
-          track: internal # سيرتفع كنسخة تجريبية داخلية في حساب أخيك
+          track: internal
