@@ -56,13 +56,14 @@ jobs:
 
       - name: Decrypt Keystore File (تحويل نص التوقيع المشفر إلى ملف حقيقي)
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/quran_project.p12
+          # فك التشفير وحفظ الملف في المجلد الرئيسي للوصول السهل والثابت
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/quran_project.p12
 
-      - name: Build and Sign Android App Bundle (AAB) (البناء والتوقيع بالـ Gradle)
+      - name: Build and Sign Android App Bundle (AAB) (البناء والتوقيع بالمسار المطلق)
         run: |
           cd android
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=quran_project.p12 \
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/quran_project.p12 \
             -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEYALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
