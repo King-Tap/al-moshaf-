@@ -63,9 +63,9 @@ jobs:
           cd android
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/quran_project.p12 \
-            -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEYALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+            -Pandroid.injected.signing.store.password="اكتب_هنا_كلمة_المرور_التي_اخترتها_في_termux" \
+            -Pandroid.injected.signing.key.alias="quran_alias" \
+            -Pandroid.injected.signing.key.password="اكتب_هنا_كلمة_المرور_التي_اخترتها_في_termux"
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
