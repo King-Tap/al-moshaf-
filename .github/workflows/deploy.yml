@@ -2,7 +2,7 @@ name: Deploy قرآن بدون نت to Google Play
 
 on:
   push:
-    branches: [ main ] # سيعمل السكريبت تلقائياً عند الدفع لفرع main
+    branches: [ main ] # سيعمل السكريبت تلقائياً عند الدفع لفرع main الرئيسي
 
 jobs:
   build:
@@ -54,26 +54,23 @@ jobs:
           npx cap copy
           npx cap sync android
 
-      - name: Build Android App Bundle (AAB)
+      - name: Decrypt Keystore File (تحويل نص التوقيع المشفر إلى ملف حقيقي)
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/quran_project.p12
+
+      - name: Build and Sign Android App Bundle (AAB) (البناء والتوقيع بالـ Gradle)
         run: |
           cd android
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=quran_project.p12 \
+            -Pandroid.injected.signing.store.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.ANDROID_KEYALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
 
-      - name: Sign App Bundle (التوقيع الرقمي بملفك)
-        id: sign_app
-        uses: r0adkll/sign-android-release@v1
-        with:
-          releaseDirectory: android/app/build/outputs/bundle/release
-          signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          alias: ${{ secrets.ANDROID_KEYALIAS }}
-          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-
-      - name: Upload to Google Play (الرفع التلقائي لحساب أخيك)
+      - name: Upload to Google Play (الرفع التلقائي لحساب المتجر)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonRaw: ${{ secrets.PLAY_STORE_JSON_KEY }}
           packageName: "com.quran.offline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
-          track: internal # سيرتفع للمسار الداخلي بأمان ليفحصه السنيور
-
+          track: internal # سيرتفع كنسخة تجريبية داخلية في حساب أخيك
