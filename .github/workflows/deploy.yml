@@ -31,9 +31,24 @@ jobs:
           # نقل ملف المفتاح المرفوع إلى داخل مجلد أندرويد
           cp quran_final.keystore android/
           
-          # إجبار إعدادات الأندرويد على استخدام الـ SDK المطلوب لمتجر جوجل (تحديث من 1 إلى 34)
-          sed -i 's/compileSdkVersion.*/compileSdkVersion = 34/g' android/variables.gradle
-          sed -i 's/targetSdkVersion.*/targetSdkVersion = 34/g' android/variables.gradle
+          # مسح ملف المتغيرات القديم وإعادة كتابته بأرقام الـ SDK الصحيحة والمطلوبة للمتجر
+          rm -f android/variables.gradle
+          cat << 'EOF' > android/variables.gradle
+          ext {
+              minSdkVersion = 22
+              compileSdkVersion = 34
+              targetSdkVersion = 34
+              androidxActivityVersion = '1.8.0'
+              androidxAppCompatVersion = '1.6.1'
+              androidxCoordinatorLayoutVersion = '1.2.0'
+              androidxCoreVersion = '1.12.0'
+              androidxFragmentVersion = '1.6.2'
+              junitVersion = '4.13.2'
+              androidxJunitVersion = '1.1.5'
+              androidxEspressoCoreVersion = '3.5.1'
+              cordovaAndroidVersion = '10.1.1'
+          }
+          EOF
           
           # تبديل الأيقونات بالقوة
           rm -rf android/app/src/main/res/mipmap-*
