@@ -72,6 +72,5 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
           packageName: "com.qatan.quranoffline"
-          projectId: "awtas-30cb2" # تحديد مشروعك لإنهاء مشكلة التداخل
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
