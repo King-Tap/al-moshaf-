@@ -28,8 +28,12 @@ jobs:
           npx cap init "قرآن بدون نت" "com.qatan.quranoffline" --web-dir www
           npx cap add android
           
-          # نقل ملف المفتاح المرفوع من المجلد الرئيسي إلى داخل مجلد أندرويد تلقائياً
+          # نقل ملف المفتاح المرفوع إلى داخل مجلد أندرويد
           cp quran_final.keystore android/
+          
+          # إجبار إعدادات الأندرويد على استخدام الـ SDK المطلوب لمتجر جوجل (تحديث من 1 إلى 34)
+          sed -i 's/compileSdkVersion.*/compileSdkVersion = 34/g' android/variables.gradle
+          sed -i 's/targetSdkVersion.*/targetSdkVersion = 34/g' android/variables.gradle
           
           # تبديل الأيقونات بالقوة
           rm -rf android/app/src/main/res/mipmap-*
