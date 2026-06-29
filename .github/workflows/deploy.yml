@@ -31,7 +31,7 @@ jobs:
           # نقل ملف المفتاح المرفوع إلى داخل مجلد أندرويد
           cp quran_final.keystore android/
           
-          # مسح ملف المتغيرات القديم وإعادة كتابته بأرقام الـ SDK الصحيحة والمطلوبة للمتجر
+          # إعادة كتابة ملف المتغيرات ليشمل إعدادات المتجر والشاشة الافتتاحية وكل المتطلبات
           rm -f android/variables.gradle
           cat << 'EOF' > android/variables.gradle
           ext {
@@ -43,6 +43,8 @@ jobs:
               androidxCoordinatorLayoutVersion = '1.2.0'
               androidxCoreVersion = '1.12.0'
               androidxFragmentVersion = '1.6.2'
+              coreSplashScreenVersion = '1.0.1'
+              androidxResourceInspectionVersion = '1.0.1'
               junitVersion = '4.13.2'
               androidxJunitVersion = '1.1.5'
               androidxEspressoCoreVersion = '3.5.1'
@@ -98,3 +100,4 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
+
