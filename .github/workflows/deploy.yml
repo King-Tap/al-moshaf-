@@ -59,24 +59,38 @@ jobs:
           cat << 'EOF' > keystore.base64
           ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           EOF
-          base64 --decode keystore.base64 > ${{ github.workspace }}/quran_production.p12
+          base64 --decode keystore.base64 > android/app/quran_production.p12
 
-      - name: Build and Sign Android App Bundle (AAB)
+      - name: Inject Signing Configuration into Gradle
         env:
           KEY_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
+          # تعديل ملف build.gradle لإدراج إعدادات التوقيع بشكل صلب وآمن
+          sed -i '/buildTypes {/i \
+              signingConfigs {\
+                  release {\
+                      storeFile file("quran_production.p12")\
+                      storePassword "'"$KEY_PASS"'"\
+                      keyAlias "quran_alias"\
+                      keyPassword "'"$KEY_PASS"'"\
+                  }\
+              }\
+          ' android/app/build.gradle
+          
+          # ربط الـ release المتولد بالتوقيع الجديد
+          sed -i '/release {/a \
+                  signingConfig signingConfigs.release\
+          ' android/app/build.gradle
+
+      - name: Build Android App Bundle (AAB)
+        run: |
           cd android
-          ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/quran_production.p12 \
-            -Pandroid.injected.signing.store.password="$KEY_PASS" \
-            -Pandroid.injected.signing.key.alias="quran_alias" \
-            -Pandroid.injected.signing.key.password="$KEY_PASS"
+          ./gradlew bundleRelease
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
           packageName: "com.qatan.quranoffline"
-          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.bundle
           tracks: internal
-
