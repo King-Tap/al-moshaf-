@@ -59,15 +59,15 @@ jobs:
           cat << 'EOF' > keystore.base64
           ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           EOF
-          base64 --decode keystore.base64 > android/quran_production.p12
+          base64 --decode keystore.base64 > android/quran_final.keystore
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
           cd android
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/quran_production.p12 \
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="quran_alias" \
+            -Pandroid.injected.signing.key.alias="quran1234" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
 
       - name: Upload to Google Play
