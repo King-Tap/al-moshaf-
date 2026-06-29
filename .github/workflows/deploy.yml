@@ -58,8 +58,8 @@ jobs:
         env:
           MY_SECRET_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "$MY_SECRET_BASE64" | base64 --decode > android/quran_final.keystore
-          # التأكد من حجم الملف في السيرفر
+          printf "%s" "$MY_SECRET_BASE64" > keystore.base64
+          base64 --decode keystore.base64 > android/quran_final.keystore
           ls -l android/quran_final.keystore
 
       - name: Verify Keystore Integrity
