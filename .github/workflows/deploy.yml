@@ -56,10 +56,13 @@ jobs:
 
       - name: Decrypt Keystore File Safely
         run: |
-          cat << 'EOF' > keystore.base64
-          ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          EOF
-          base64 --decode keystore.base64 > android/quran_final.keystore
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/quran_final.keystore
+
+      - name: Verify Keystore Integrity (خطوة الفحص المخبرية)
+        run: |
+          keytool -list -v \
+            -keystore android/quran_final.keystore \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
