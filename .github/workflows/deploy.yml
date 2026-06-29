@@ -59,18 +59,18 @@ jobs:
           cat << 'EOF' > keystore.base64
           ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           EOF
-          base64 --decode keystore.base64 > ${{ github.workspace }}/quran_project.p12
+          base64 --decode keystore.base64 > ${{ github.workspace }}/quran_production.p12
 
       - name: Build and Sign Android App Bundle (AAB)
         env:
-          PASS_ENV: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           cd android
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/quran_project.p12 \
-            -Pandroid.injected.signing.store.password="$PASS_ENV" \
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/quran_production.p12 \
+            -Pandroid.injected.signing.store.password="$KEY_PASS" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
-            -Pandroid.injected.signing.key.password="$PASS_ENV"
+            -Pandroid.injected.signing.key.password="$KEY_PASS"
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
@@ -79,3 +79,4 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
+
