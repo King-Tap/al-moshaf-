@@ -61,14 +61,14 @@ jobs:
             exit 1
           fi
 
-      - name: 💥 تطهير وفرض قيم الـ SDK الصارمة (بدون تكرار كتل)
+      - name: 💥 تطهير وفرض قيم الـ SDK 35 الصارمة وحقن الـ Namespace
         run: |
-          # 1. إعداد ملف variables.gradle الرئيسي من الصفر
+          # 1. إعداد ملف variables.gradle الرئيسي باستهداف SDK 35 الإجباري لجوجل
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
-              compileSdkVersion = 34
-              targetSdkVersion = 34
+              compileSdkVersion = 35
+              targetSdkVersion = 35
               androidxActivityVersion = '1.8.0'
               androidxAppCompatVersion = '1.6.1'
               androidxCoordinatorLayoutVersion = '1.2.0'
@@ -87,17 +87,18 @@ jobs:
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-          # 3. إعادة كتابة ملف android/app/build.gradle بالكامل بشكل نظيف لمنع تعارض الكتل
+          # 3. إعادة كتابة ملف android/app/build.gradle بالكامل وحل مشكلة الـ Namespace مع فرض SDK 35
           cat << 'EOF' > android/app/build.gradle
           apply plugin: 'com.android.application'
 
           android {
-              compileSdkVersion 34
+              namespace "com.qatan.quranoffline"
+              compileSdkVersion 35
               
               defaultConfig {
                   applicationId "com.qatan.quranoffline"
                   minSdkVersion 22
-                  targetSdkVersion 34
+                  targetSdkVersion 35
                   versionCode 1
                   versionName "1.0"
                   testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -128,14 +129,14 @@ jobs:
           }
           EOF
 
-          # 4. كتابة الـ Manifest الصارم والنهائي
+          # 4. كتابة الـ Manifest الصارم والنهائي بالـ SDK 35 الجديد
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:tools="http://schemas.android.com/tools"
               package="com.qatan.quranoffline">
 
-              <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" tools:overrideLibrary="*" />
+              <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="35" tools:overrideLibrary="*" />
 
               <application
                   android:allowBackup="true"
@@ -173,7 +174,7 @@ jobs:
           </manifest>
           EOF
 
-          echo "=== تم تصفية الملفات وفرض الـ SDK بنجاح تام ==="
+          echo "=== تم تصفية الملفات وحل الـ Namespace وفرض SDK 35 بنجاح تام ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
