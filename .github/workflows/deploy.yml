@@ -61,9 +61,9 @@ jobs:
             exit 1
           fi
 
-      - name: 💥 سحق وإجبار الـ SDK وإعادة كتابة الـ Manifest قسرياً
+      - name: 💥 تطهير وفرض قيم الـ SDK الصارمة (بدون تكرار كتل)
         run: |
-          # 1. إعداد ملف variables.gradle
+          # 1. إعداد ملف variables.gradle الرئيسي من الصفر
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -83,39 +83,52 @@ jobs:
           }
           EOF
 
-          # 2. إنشاء ملف خصائص الأندرويد
+          # 2. ضبط خصائص الأندرويد
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-          # 3. إجبار المجلدات والمشاريع الفرعية على الامتثال المطلق للهدف رقم 34
-          cat << 'EOF' >> android/build.gradle
-          subprojects {
-              afterEvaluate { project ->
-                  if (project.hasProperty("android")) {
-                      android {
-                          compileSdkVersion 34
-                          defaultConfig {
-                              minSdkVersion 22
-                              targetSdkVersion 34
-                          }
-                      }
+          # 3. إعادة كتابة ملف android/app/build.gradle بالكامل بشكل نظيف لمنع تعارض الكتل
+          cat << 'EOF' > android/app/build.gradle
+          apply plugin: 'com.android.application'
+
+          android {
+              compileSdkVersion 34
+              
+              defaultConfig {
+                  applicationId "com.qatan.quranoffline"
+                  minSdkVersion 22
+                  targetSdkVersion 34
+                  versionCode 1
+                  versionName "1.0"
+                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+                  aaptOptions {
+                       cruncherEnabled = false
+                  }
+              }
+              
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
                   }
               }
           }
-          EOF
 
-          # 4. حقن صارم للقيم داخل ملف build.gradle الخاص بالتطبيق
-          cat << 'EOF' >> android/app/build.gradle
-          android {
-              compileSdkVersion 34
-              defaultConfig {
-                  minSdkVersion 22
-                  targetSdkVersion 34
+          repositories {
+              flatDir {
+                  dirs 'libs'
               }
+          }
+
+          dependencies {
+              implementation fileTree(dir: 'libs', include: ['*.jar'])
+              implementation project(':capacitor-android')
+              implementation "androidx.appcompat:appcompat:1.6.1"
+              implementation "androidx.core:core-ktx:1.12.0"
           }
           EOF
 
-          # 5. إعادة كتابة ملف الـ AndroidManifest.xml الرئيسي وضمان وجود الـ uses-sdk بداخل الهيكل نصاً رغماً عن أي دمج
+          # 4. كتابة الـ Manifest الصارم والنهائي
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -160,7 +173,7 @@ jobs:
           </manifest>
           EOF
 
-          echo "=== تم سحق المشكلة وإعادة هيكلة الـ Manifest بنجاح ==="
+          echo "=== تم تصفية الملفات وفرض الـ SDK بنجاح تام ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
@@ -169,15 +182,7 @@ jobs:
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.build.compileSdkVersion=34 \
-            -Pandroid.injected.build.targetSdkVersion=34 \
-            -Pandroid.injected.build.minSdkVersion=22
-
-      - name: 🕵️ تتبع الـ Manifest المدمج النهائي (Merged Manifest) بعد البناء وقبل الرفع
-        run: |
-          echo "=== التثبت من وجود وسم الـ SDK النهائي ==="
-          find android/app/build/ -name "AndroidManifest.xml" -exec echo "--- ملف جديد: {} ---" \; -exec grep -Hn "targetSdkVersion" {} \; || true
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
@@ -186,3 +191,4 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
+
