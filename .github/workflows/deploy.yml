@@ -122,6 +122,14 @@ jobs:
 
           echo "=== تم فرض السيطرة الشاملة وسحق الرقم 1 بنجاح ==="
 
+      - name: 🔍 خطوة التتبع الكبرى (قراءة الـ Manifest قبل البناء الفعلي)
+        run: |
+          echo "=== طباعة محتويات ملف AndroidManifest.xml للتطبيق لرؤية الـ SDK الحقيقي ==="
+          cat android/app/src/main/AndroidManifest.xml || true
+          
+          echo "=== فحص ملف الـ build.gradle للتأكد من الحقن ==="
+          cat android/app/build.gradle || true
+
       - name: Build and Sign Android App Bundle (AAB)
         run: |
           cd android
@@ -133,6 +141,11 @@ jobs:
             -Pandroid.injected.build.compileSdkVersion=34 \
             -Pandroid.injected.build.targetSdkVersion=34 \
             -Pandroid.injected.build.minSdkVersion=22
+
+      - name: 🕵️ تتبع الـ Manifest المدمج النهائي (Merged Manifest) بعد البناء وقبل الرفع
+        run: |
+          echo "=== البحث عن أي ملف Manifest تم إنتاجه في مخرجات البناء ==="
+          find android/app/build/ -name "AndroidManifest.xml" -exec echo "--- ملف جديد: {} ---" \; -exec cat {} \; || true
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
