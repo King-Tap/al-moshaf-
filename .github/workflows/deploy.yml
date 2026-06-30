@@ -70,12 +70,10 @@ jobs:
             -keystore android/quran_final.keystore \
             -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
 
-      - name: 💥 Operation Hardcode 34 (الهجوم الانتحاري على ملفات الـ Gradle)
+      - name: 💥 التطهير الشامل والقسري لجميع ملفات البناء (Total Purge)
         run: |
-          cd android
-          
-          # 1. إنشاء ملف المتغيرات كخط دفاع أول
-          cat << 'EOF' > variables.gradle
+          # 1. تعديل ملف المتغيرات الرئيسي
+          cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
               compileSdkVersion = 34
@@ -94,14 +92,15 @@ jobs:
           }
           EOF
 
-          # 2. الهجوم المباشر وتعديل نصوص الأكواد داخل app/build.gradle لفرض القيم فرضاً رغماً عن النظام
-          sed -i 's/rootProject.ext.compileSdkVersion/34/g' app/build.gradle
-          sed -i 's/rootProject.ext.targetSdkVersion/34/g' app/build.gradle
-          sed -i 's/rootProject.ext.minSdkVersion/22/g' app/build.gradle
+          # 2. الهجوم الكاسح: استبدال قيم الـ SDK بـ 34 في كل ملف build.gradle داخل المشروع وداخل مكتبات Node المرفقة برمجياً!
+          find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.compileSdkVersion/34/g' {} +
+          find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.targetSdkVersion/34/g' {} +
+          find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.minSdkVersion/22/g' {} +
           
-          # طباعة الملف في السجلات للتأكد من نجاح الاستبدال الحتمي
-          echo "=== تم تعديل ملف build.gradle بنجاح وقسرياً ==="
-          cat app/build.gradle | grep -E "SdkVersion"
+          # 3. تعديل يدوي مباشر داخل ملف الـ Manifest الرئيسي للتطبيق والـ Cordova احتياطاً لغلق الثغرة تماماً
+          find android/ -name "AndroidManifest.xml" -type f -exec sed -i 's|<application|<uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" />\n    <application|g' {} +
+
+          echo "=== تم تطهير كافة ملفات البناء والـ Manifest في المشروع بالكامل ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
