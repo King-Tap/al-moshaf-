@@ -26,7 +26,7 @@ jobs:
           mkdir -p www
           cp index.html www/
           
-          # إنشاء ملف التكوين الأساسي
+          # إنشاء ملف التكوين الأساسي لـ Capacitor
           cat << 'EOF' > capacitor.config.json
           {
             "appId": "com.qatan.quranoffline",
@@ -51,20 +51,20 @@ jobs:
           npx cap copy
           npx cap sync android
 
-      - name: 🔐 فك تشفير ملف المفاتيح بأمان وصيانة المسار
+      - name: 🔐 نقل وتأمين ملف المفتاح من جذر المستودع
         run: |
-          # فك تشفير النص وضمان كتابته بالكامل داخل مجلد أندرويد للتطبيق
-          echo "${{ secrets.MY_SECRET_BASE64 }}" | base64 --decode > android/app/quran_final.keystore
-          
-          # التحقق من حجم الملف للتأكد من أنه ليس فارغاً (أكبر من 0 بايت)
-          if [ ! -s android/app/quran_final.keystore ]; then
-            echo "❌ خطأ قاتل: ملف الـ Keystore تم فكه فارغاً! تأكد من نص Base64 في الـ Secrets."
+          # التحقق من وجود الملف في الجذر ونقله إلى مجلد التطبيق الداخلي
+          if [ -f "${{ github.workspace }}/quran_final.keystore" ]; then
+            cp "${{ github.workspace }}/quran_final.keystore" android/app/quran_final.keystore
+            echo "✅ تم العثور على ملف المفتاح في المستودع ونقله بنجاح!"
+          else
+            echo "❌ خطأ: لم يتم العثور على ملف quran_final.keystore في جذر المستودع!"
             exit 1
           fi
 
       - name: 💥 التطهير الشامل والقسري لجميع ملفات البناء (Total Purge)
         run: |
-          # 1. تعديل ملف المتغيرات الرئيسي لضمان توجيه الـ SDK
+          # 1. إجبار السيرفر على إعداد ملف المتغيرات بقيم المتجر المطلوبة
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -84,7 +84,7 @@ jobs:
           }
           EOF
 
-          # 2. استبدال قيم الـ SDK بـ 34 في كل ملفات البناء قسرياً
+          # 2. استبدال قيم الـ SDK بـ 34 في كل ملفات البناء قسرياً داخل الـ Runner
           find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.compileSdkVersion/34/g' {} +
           find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.targetSdkVersion/34/g' {} +
           find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.minSdkVersion/22/g' {} +
