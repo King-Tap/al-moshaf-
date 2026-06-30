@@ -61,9 +61,9 @@ jobs:
             exit 1
           fi
 
-      - name: 💥 سحق وإجبار الـ SDK لجميع الإضافات والمشروع (الضربة القاضية)
+      - name: 💥 سحق وإجبار الـ SDK وإعادة كتابة الـ Manifest قسرياً
         run: |
-          # 1. إعداد ملف variables.gradle الإلزامي
+          # 1. إعداد ملف variables.gradle
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -83,13 +83,12 @@ jobs:
           }
           EOF
 
-          # 2. إنشاء ملف خصائص لمنع المعايير القديمة والمهملة
+          # 2. إنشاء ملف خصائص الأندرويد
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
           # 3. إجبار المجلدات والمشاريع الفرعية على الامتثال المطلق للهدف رقم 34
           cat << 'EOF' >> android/build.gradle
-
           subprojects {
               afterEvaluate { project ->
                   if (project.hasProperty("android")) {
@@ -105,9 +104,8 @@ jobs:
           }
           EOF
 
-          # 4. حقن صارم للقيم داخل ملف build.gradle الخاص بالتطبيق مباشرة بعد التوليد
+          # 4. حقن صارم للقيم داخل ملف build.gradle الخاص بالتطبيق
           cat << 'EOF' >> android/app/build.gradle
-
           android {
               compileSdkVersion 34
               defaultConfig {
@@ -117,18 +115,52 @@ jobs:
           }
           EOF
 
-          # 5. تعديل شامل وصارم لملف الـ Manifest لفرض الإعدادات ومنع دمج القيم التالفة من المكاتب الفرعية
-          sed -i 's|<manifest[^>]*>|&\n    <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" tools:overrideLibrary="*" xmlns:tools="http://schemas.android.com/tools" />|g' android/app/src/main/AndroidManifest.xml
+          # 5. إعادة كتابة ملف الـ AndroidManifest.xml الرئيسي وضمان وجود الـ uses-sdk بداخل الهيكل نصاً رغماً عن أي دمج
+          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              package="com.qatan.quranoffline">
 
-          echo "=== تم فرض السيطرة الشاملة وسحق الرقم 1 بنجاح ==="
+              <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" tools:overrideLibrary="*" />
 
-      - name: 🔍 خطوة التتبع الكبرى (قراءة الـ Manifest قبل البناء الفعلي)
-        run: |
-          echo "=== طباعة محتويات ملف AndroidManifest.xml للتطبيق لرؤية الـ SDK الحقيقي ==="
-          cat android/app/src/main/AndroidManifest.xml || true
-          
-          echo "=== فحص ملف الـ build.gradle للتأكد من الحقن ==="
-          cat android/app/build.gradle || true
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="@string/app_name"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:supportsRtl="true"
+                  android:theme="@style/AppTheme">
+
+                  <activity
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+                      android:name="com.qatan.quranoffline.MainActivity"
+                      android:label="@string/title_activity_main"
+                      android:exported="true"
+                      android:launchMode="singleTop">
+
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+
+                  </activity>
+
+                  <provider
+                      android:name="androidx.core.content.FileProvider"
+                      android:authorities="${applicationId}.fileprovider"
+                      android:exported="false"
+                      android:grantUriPermissions="true">
+                      <meta-data
+                          android:name="android.support.FILE_PROVIDER_PATHS"
+                          android:resource="@xml/file_paths" />
+                  </provider>
+
+              </application>
+          </manifest>
+          EOF
+
+          echo "=== تم سحق المشكلة وإعادة هيكلة الـ Manifest بنجاح ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
@@ -144,8 +176,8 @@ jobs:
 
       - name: 🕵️ تتبع الـ Manifest المدمج النهائي (Merged Manifest) بعد البناء وقبل الرفع
         run: |
-          echo "=== البحث عن أي ملف Manifest تم إنتاجه في مخرجات البناء ==="
-          find android/app/build/ -name "AndroidManifest.xml" -exec echo "--- ملف جديد: {} ---" \; -exec cat {} \; || true
+          echo "=== التثبت من وجود وسم الـ SDK النهائي ==="
+          find android/app/build/ -name "AndroidManifest.xml" -exec echo "--- ملف جديد: {} ---" \; -exec grep -Hn "targetSdkVersion" {} \; || true
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
@@ -154,4 +186,3 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
-
