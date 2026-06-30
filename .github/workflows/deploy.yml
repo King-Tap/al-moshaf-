@@ -51,20 +51,19 @@ jobs:
           npx cap copy
           npx cap sync android
 
-      - name: 🔐 تأمين مسار ملف المفتاح الأصلي
+      - name: 🔐 نقل وتأمين ملف المفتاح من جذر المستودع
         run: |
-          # نسخ ملف المفتاح الموجود في جذر المستودع إلى المسار الداخلي للأندرويد
           if [ -f "${{ github.workspace }}/quran_final.keystore" ]; then
             cp "${{ github.workspace }}/quran_final.keystore" android/app/quran_final.keystore
-            echo "✅ تم العثور على ملف المفتاح في المستودع ونقله بنجاح!"
+            echo "✅ تم نقل ملف المفتاح بنجاح!"
           else
-            echo "❌ خطأ: ملف quran_final.keystore غير موجود في جذر المستودع!"
+            echo "❌ خطأ: لم يتم العثور على ملف quran_final.keystore في جذر المستودع!"
             exit 1
           fi
 
-      - name: 💥 الحقن الصارم لـ SDK 34 في كود المصدر
+      - name: 💥 سحق وإجبار الـ SDK لجميع الإضافات والمشروع (الضربة القاضية)
         run: |
-          # 1. إجبار ملف variables.gradle على احتواء القيم الصحيحة
+          # 1. إعداد ملف variables.gradle
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -84,16 +83,28 @@ jobs:
           }
           EOF
 
-          # 2. استبدال المتغيرات بنصوص برمجية ثابتة (Hardcoded) داخل ملف build.gradle الرئيسي للتطبيق
-          sed -i 's/rootProject.ext.compileSdkVersion/34/g' android/app/build.gradle
-          sed -i 's/rootProject.ext.targetSdkVersion/34/g' android/app/build.gradle
-          sed -i 's/rootProject.ext.minSdkVersion/22/g' android/app/build.gradle
+          # 2. حقن كود برمي في ملف build.gradle الرئيسي يجبر أي مكتبة فرعية أو إضافة Cordova على استخدام SDK 34 غصباً عنها
+          cat << 'EOF' >> android/build.gradle
 
-          # 3. تعديل ملف الـ Manifest الرئيسي للتطبيق لفرض الـ SDK صراحة عبر الـ XML
-          # سنقوم بحقن وسم uses-sdk بشكل صحيح كأول عنصر داخل <manifest>
-          sed -i 's|<manifest[^>]*>|&\n    <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" />|g' android/app/src/main/AndroidManifest.xml
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty("android")) {
+                      android {
+                          compileSdkVersion 34
+                          defaultConfig {
+                              minSdkVersion 22
+                              targetSdkVersion 34
+                          }
+                      }
+                  }
+              }
+          }
+          EOF
 
-          echo "=== تمت عملية الحقن والتهيئة الصارمة لملف الـ Manifest والـ Gradle ==="
+          # 3. تعديل ملف الـ Manifest الرئيسي للتطبيق لفرض استبدال أي إعدادات تالفة قادمة من المكتبات
+          sed -i 's|<manifest[^>]*>|&\n    <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" tools:overrideLibrary="*" xmlns:tools="http://schemas.android.com/tools" />|g' android/app/src/main/AndroidManifest.xml
+
+          echo "=== تم فرض السيطرة على كل الـ Plugins والمشروع بنجاح ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
@@ -102,10 +113,7 @@ jobs:
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.build.compileSdkVersion=34 \
-            -Pandroid.injected.build.targetSdkVersion=34 \
-            -Pandroid.injected.build.minSdkVersion=22
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
@@ -114,3 +122,4 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
+
