@@ -63,7 +63,7 @@ jobs:
 
       - name: 💥 سحق وإجبار الـ SDK لجميع الإضافات والمشروع (الضربة القاضية)
         run: |
-          # 1. إعداد ملف variables.gradle
+          # 1. إعداد ملف variables.gradle الإلزامي
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -83,28 +83,32 @@ jobs:
           }
           EOF
 
-          # 2. حقن كود برمي في ملف build.gradle الرئيسي يجبر أي مكتبة فرعية أو إضافة Cordova على استخدام SDK 34 غصباً عنها
-          cat << 'EOF' >> android/build.gradle
+          # 2. إنشاء ملف خصائص لإجبار النظام على المعايير الحديثة
+          echo "android.useAndroidX=true" > android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
 
-          subprojects {
-              afterEvaluate { project ->
-                  if (project.hasProperty("android")) {
-                      android {
-                          compileSdkVersion 34
-                          defaultConfig {
-                              minSdkVersion 22
-                              targetSdkVersion 34
-                          }
-                      }
-                  }
+          # 3. حقن كود برمي صارم في ملف build.gradle الرئيسي للتطبيق لإجبار المخرجات النهائية على الهدف 34
+          cat << 'EOF' >> android/app/build.gradle
+
+          android {
+              compileSdkVersion 34
+              defaultConfig {
+                  minSdkVersion 22
+                  targetSdkVersion 34
               }
+          }
+
+          project.ext {
+              compileSdkVersion = 34
+              targetSdkVersion = 34
+              minSdkVersion = 22
           }
           EOF
 
-          # 3. تعديل ملف الـ Manifest الرئيسي للتطبيق لفرض استبدال أي إعدادات تالفة قادمة من المكتبات
+          # 4. تعديل شامل وصارم لملف الـ Manifest لفرض الإعدادات ومنع دمج القيم القديمة
           sed -i 's|<manifest[^>]*>|&\n    <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" tools:overrideLibrary="*" xmlns:tools="http://schemas.android.com/tools" />|g' android/app/src/main/AndroidManifest.xml
 
-          echo "=== تم فرض السيطرة على كل الـ Plugins والمشروع بنجاح ==="
+          echo "=== تم فرض السيطرة الشاملة بنجاح ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
@@ -113,7 +117,10 @@ jobs:
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.build.compileSdkVersion=34 \
+            -Pandroid.injected.build.targetSdkVersion=34 \
+            -Pandroid.injected.build.minSdkVersion=22
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
@@ -122,4 +129,3 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
-
