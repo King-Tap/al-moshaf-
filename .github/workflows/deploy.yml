@@ -64,9 +64,9 @@ jobs:
             exit 1
           fi
 
-      - name: 💥 تطهير وفرض قيم الـ SDK 35 الصارمة وحقن الـ Namespace
+      - name: 💥 تطهير شامل وفرض قيم التوافق لـ SDK 35
         run: |
-          # 1. إعداد ملف variables.gradle الرئيسي باستهداف SDK 35 الإجباري لجوجل
+          # 1. إعداد ملف variables.gradle الرئيسي باستهداف SDK 35
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -86,18 +86,19 @@ jobs:
           }
           EOF
 
-          # 2. ضبط خصائص الأندرويد لتعطيل التحذيرات والتحقق الصارم
+          # 2. السحر كله هنا: إجبار Gradle على قبول SDK 35 دون اعتراض
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
 
-          # 3. إعادة كتابة ملف android/app/build.gradle بالكامل وحل مشكلة الـ Namespace مع فرض SDK 35
+          # 3. إعادة كتابة ملف android/app/build.gradle ليتوافق مع الإصدارات القديمة والحديثة معاً
           cat << 'EOF' > android/app/build.gradle
           apply plugin: 'com.android.application'
 
           android {
               namespace "com.qatan.quranoffline"
               compileSdkVersion 35
+              buildToolsVersion "35.0.0"
               
               defaultConfig {
                   applicationId "com.qatan.quranoffline"
@@ -106,9 +107,6 @@ jobs:
                   versionCode 1
                   versionName "1.0"
                   testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-                  aaptOptions {
-                       cruncherEnabled = false
-                  }
               }
               
               buildTypes {
@@ -133,7 +131,7 @@ jobs:
           }
           EOF
 
-          # 4. كتابة الـ Manifest الصارم والنهائي بالـ SDK 35 الجديد
+          # 4. كتابة الـ Manifest النهائي وتثبيت الـ SDK برمجياً في الـ Manifest المدمج أيضاً
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -176,8 +174,6 @@ jobs:
               </application>
           </manifest>
           EOF
-
-          echo "=== تم تصفية الملفات وحل الـ Namespace وفرض SDK 35 بنجاح تام ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
