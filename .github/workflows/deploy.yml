@@ -64,7 +64,7 @@ jobs:
             exit 1
           fi
 
-      - name: 🛠️ إصلاح وتحديث الـ AGP ليتوافق مع SDK 35
+      - name: 💥 تطهير شامل وفرض قيم التوافق وإصلاح الثيمات (Styles)
         run: |
           # 1. إعداد ملف variables.gradle الرئيسي باستهداف SDK 35
           cat << 'EOF' > android/variables.gradle
@@ -91,7 +91,7 @@ jobs:
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
 
-          # 3. تحديث الـ AGP لنسخة 8.1.0 في ملف build.gradle الرئيسي لحل عقدة الـ Aapt2 تماماً!
+          # 3. تحديث الـ AGP لنسخة 8.1.0 في ملف build.gradle الرئيسي
           cat << 'EOF' > android/build.gradle
           buildscript {
               repositories {
@@ -116,7 +116,7 @@ jobs:
           }
           EOF
 
-          # 4. إعادة صياغة ملف android/app/build.gradle ليتوافق تماماً مع التحديث
+          # 4. إعادة صياغة ملف android/app/build.gradle
           cat << 'EOF' > android/app/build.gradle
           apply plugin: 'com.android.application'
 
@@ -153,14 +153,32 @@ jobs:
               implementation project(':capacitor-android')
               implementation "androidx.appcompat:appcompat:1.6.1"
               implementation "androidx.core:core-ktx:1.12.0"
+              implementation "androidx.core:core-splashscreen:1.0.1"
           }
           EOF
 
-          # 5. تثبيت الـ Manifest النظيف لمنع التداخل
+          # 5. السحر الحقيقي هنا: حقن ملف الـ styles.xml لتعريف ثيم الـ SplashScreen المفقود
+          mkdir -p android/app/src/main/res/values
+          cat << 'EOF' > android/app/src/main/res/values/styles.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+                  <item name="colorPrimary">@android:color/white</item>
+              </style>
+
+              <style name="Theme.SplashScreen" parent="Theme.SplashScreen.IconBackground">
+                  <item name="windowSplashScreenBackground">@android:color/white</item>
+                  <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+                  <item name="postSplashScreenTheme">@style/AppTheme</item>
+              </style>
+          </resources>
+          EOF
+
+          # 6. تثبيت الـ Manifest النظيف وتعديل الثيم ليكون متوافقاً مع شاشة البدء
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://tools.android.com/tools">
+              xmlns:tools="http://schemas.android.com/tools">
 
               <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="35" tools:overrideLibrary="*" />
 
@@ -170,7 +188,7 @@ jobs:
                   android:label="@string/app_name"
                   android:roundIcon="@mipmap/ic_launcher_round"
                   android:supportsRtl="true"
-                  android:theme="@style/AppTheme">
+                  android:theme="@style/Theme.SplashScreen">
 
                   <activity
                       android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
