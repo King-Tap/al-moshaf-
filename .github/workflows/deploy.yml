@@ -31,7 +31,7 @@ jobs:
           # نقل ملف المفتاح المرفوع إلى داخل مجلد أندرويد
           cp quran_final.keystore android/
           
-          # إعادة كتابة ملف المتغيرات ليشمل إعدادات المتجر والشاشة الافتتاحية وكل المتطلبات
+          # إجبار إصدار الشاشة الافتتاحية والـ SDK في ملف المتغيرات الرئيسي
           rm -f android/variables.gradle
           cat << 'EOF' > android/variables.gradle
           ext {
@@ -52,7 +52,13 @@ jobs:
           }
           EOF
           
-          # تبديل الأيقونات بالقوة
+          # 🛑 تحديث حاسم وقاطع لجميع ملفات build.gradle لفرض الـ SDK 34 برمجياً ومنع قراءة القيمة 1
+          find android/ -name "build.gradle" -exec sed -i 's/compileSdkVersion.*/compileSdkVersion 34/g' {} +
+          find android/ -name "build.gradle" -exec sed -i 's/targetSdkVersion.*/targetSdkVersion 34/g' {} +
+          find android/ -name "build.gradle" -exec sed -i 's/compileSdk.*/compileSdk 34/g' {} +
+          find android/ -name "build.gradle" -exec sed -i 's/targetSdk.*/targetSdk 34/g' {} +
+
+          # تبديل الأيقونات بالقوة وتجنب أي خطأ في أبعاد الصور
           rm -rf android/app/src/main/res/mipmap-*
           
           mkdir -p android/app/src/main/res/mipmap-hdpi
@@ -100,4 +106,3 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
-
