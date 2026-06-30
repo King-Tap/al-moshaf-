@@ -46,6 +46,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: 📥 تحميل وتثبيت الـ Android SDK Platform 35 إجبارياً
+        run: |
+          # قبول التراخيص أولاً وتثبيت منصة أندرويد 15 وأدوات البناء الخاصة بها
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
       - name: Sync Capacitor Android
         run: |
           npx cap copy
@@ -129,12 +135,11 @@ jobs:
           }
           EOF
 
-          # 4. كتابة الـ Manifest الصارم والنهائي بالـ SDK 35 الجديد
+          # 4. كتابة الـ Manifest الصارم والنهائي بالـ SDK 35 الجديد لحل تداخل الاسم البرمجي
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools"
-              package="com.qatan.quranoffline">
+              xmlns:tools="http://schemas.android.com/tools">
 
               <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="35" tools:overrideLibrary="*" />
 
