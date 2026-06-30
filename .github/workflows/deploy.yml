@@ -43,29 +43,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 📥 تثبيت وتهيئة الـ Android SDK 35 بالطريقة الرسمية الصارمة
-        run: |
-          # تحديد المسار الثابت للـ SDK
-          echo "ANDROID_HOME=$ANDROID_ALLOW_UNSECURE_ANDROID_HOME" >> $GITHUB_ENV
-          export ANDROID_HOME=/usr/local/lib/android/sdk
-          export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools
-          
-          # تحديث الـ sdkmanager وقبول التراخيص إجبارياً
-          yes | sdkmanager --licenses
-          
-          # تحميل المنصة 35 وأدوات البناء المتوافقة في المسار الصحيح للنظام
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-          
-          # التأكد من وجود الملف لحل مشكلة التجميع
-          if [ -f "$ANDROID_HOME/platforms/android-35/android.jar" ]; then
-            echo "✅ تم التحقق! ملف android.jar الخاص بـ SDK 35 موجود ومستعد للبناء!"
-          else
-            echo "⚠️ تحذير: جاري محاولة إعادة الربط القسري للمجلد..."
-            mkdir -p $ANDROID_HOME/platforms/android-35
-            sudo apt-get update && sudo apt-get install -y android-sdk-platform-23-api || true
-            # إعادة المحاولة للتأكيد التام
-            sdkmanager "platforms;android-35"
-          fi
+      - name: 📥 Setup Android SDK (API 35)
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 35
+          build-tools: 35.0.0
 
       - name: Sync Capacitor Android
         run: |
@@ -200,7 +182,6 @@ jobs:
       - name: Build and Sign Android App Bundle (AAB)
         run: |
           cd android
-          export ANDROID_HOME=/usr/local/lib/android/sdk
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
