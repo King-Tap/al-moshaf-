@@ -65,7 +65,7 @@ jobs:
         run: |
           cd android
           
-          # تعديل ملف المتغيرات بعد الـ Sync مباشرة لضمان القيم
+          # 1. فرض متغيرات الـ Gradle بعد الـ Sync مباشرة
           rm -f variables.gradle
           cat << 'EOF' > variables.gradle
           ext {
@@ -86,7 +86,11 @@ jobs:
           }
           EOF
 
-          # 🛑 السر الحاسم: تمرير قيم الـ SDK مباشرة كمعاملات إجبارية للمترجم لفرضها داخل الـ Manifest النهائي للحزمة
+          # 2. 🛑 التعديل الجوهري: حقن سطر الـ SDK برمجياً داخل الـ Manifest مباشرة قبل التجميع
+          # السكربت يبحث عن وسم <manifest وتحديداً بعده ويضع وسم التوافق والـ SDK المطلوبة للمتجر
+          sed -i 's|<manifest|<manifest xmlns:android="http://schemas.android.com/apk/res/android"|g' app/src/main/AndroidManifest.xml
+          sed -i 's|<application|<uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" />\n    <application|g' app/src/main/AndroidManifest.xml
+
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
@@ -102,4 +106,3 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
-
