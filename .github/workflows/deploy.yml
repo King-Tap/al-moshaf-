@@ -26,17 +26,12 @@ jobs:
           mkdir -p www
           cp index.html www/
           
-          # إعداد ملف التكوين الأساسي
+          # إنشاء ملف التكوين الأساسي
           cat << 'EOF' > capacitor.config.json
           {
             "appId": "com.qatan.quranoffline",
             "appName": "قرآن بدون نت",
-            "webDir": "www",
-            "android": {
-              "compileSdkVersion": 34,
-              "targetSdkVersion": 34,
-              "minSdkVersion": 22
-            }
+            "webDir": "www"
           }
           EOF
           
@@ -75,11 +70,11 @@ jobs:
             -keystore android/quran_final.keystore \
             -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
 
-      - name: Build and Sign Android App Bundle (AAB)
+      - name: 💥 Operation Hardcode 34 (الهجوم الانتحاري على ملفات الـ Gradle)
         run: |
           cd android
           
-          # 🛑 الحل الحاسم: إجبار السيرفر على إنشاء ملف المتغيرات بالقيم المطلوبة للمتجر فوراً
+          # 1. إنشاء ملف المتغيرات كخط دفاع أول
           cat << 'EOF' > variables.gradle
           ext {
               minSdkVersion = 22
@@ -99,7 +94,18 @@ jobs:
           }
           EOF
 
-          # بناء التطبيق مع حقن قيم الـ SDK مباشرة داخل معلمات الـ Gradle كخط دفاع إضافي
+          # 2. الهجوم المباشر وتعديل نصوص الأكواد داخل app/build.gradle لفرض القيم فرضاً رغماً عن النظام
+          sed -i 's/rootProject.ext.compileSdkVersion/34/g' app/build.gradle
+          sed -i 's/rootProject.ext.targetSdkVersion/34/g' app/build.gradle
+          sed -i 's/rootProject.ext.minSdkVersion/22/g' app/build.gradle
+          
+          # طباعة الملف في السجلات للتأكد من نجاح الاستبدال الحتمي
+          echo "=== تم تعديل ملف build.gradle بنجاح وقسرياً ==="
+          cat app/build.gradle | grep -E "SdkVersion"
+
+      - name: Build and Sign Android App Bundle (AAB)
+        run: |
+          cd android
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
@@ -115,3 +121,4 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
+
