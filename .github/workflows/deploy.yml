@@ -83,11 +83,29 @@ jobs:
           }
           EOF
 
-          # 2. إنشاء ملف خصائص لإجبار النظام على المعايير الحديثة
+          # 2. إنشاء ملف خصائص لمنع المعايير القديمة والمهملة
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-          # 3. حقن كود برمي صارم في ملف build.gradle الرئيسي للتطبيق لإجبار المخرجات النهائية على الهدف 34
+          # 3. إجبار المجلدات والمشاريع الفرعية على الامتثال المطلق للهدف رقم 34
+          cat << 'EOF' >> android/build.gradle
+
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty("android")) {
+                      android {
+                          compileSdkVersion 34
+                          defaultConfig {
+                              minSdkVersion 22
+                              targetSdkVersion 34
+                          }
+                      }
+                  }
+              }
+          }
+          EOF
+
+          # 4. حقن صارم للقيم داخل ملف build.gradle الخاص بالتطبيق مباشرة بعد التوليد
           cat << 'EOF' >> android/app/build.gradle
 
           android {
@@ -97,18 +115,12 @@ jobs:
                   targetSdkVersion 34
               }
           }
-
-          project.ext {
-              compileSdkVersion = 34
-              targetSdkVersion = 34
-              minSdkVersion = 22
-          }
           EOF
 
-          # 4. تعديل شامل وصارم لملف الـ Manifest لفرض الإعدادات ومنع دمج القيم القديمة
+          # 5. تعديل شامل وصارم لملف الـ Manifest لفرض الإعدادات ومنع دمج القيم التالفة من المكاتب الفرعية
           sed -i 's|<manifest[^>]*>|&\n    <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" tools:overrideLibrary="*" xmlns:tools="http://schemas.android.com/tools" />|g' android/app/src/main/AndroidManifest.xml
 
-          echo "=== تم فرض السيطرة الشاملة بنجاح ==="
+          echo "=== تم فرض السيطرة الشاملة وسحق الرقم 1 بنجاح ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
@@ -129,3 +141,4 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
+
