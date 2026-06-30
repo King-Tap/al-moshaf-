@@ -51,20 +51,20 @@ jobs:
           npx cap copy
           npx cap sync android
 
-      - name: 🔐 نقل وتأمين ملف المفتاح من جذر المستودع
+      - name: 🔐 تأمين مسار ملف المفتاح الأصلي
         run: |
-          # التحقق من وجود الملف في الجذر ونقله إلى مجلد التطبيق الداخلي
+          # نسخ ملف المفتاح الموجود في جذر المستودع إلى المسار الداخلي للأندرويد
           if [ -f "${{ github.workspace }}/quran_final.keystore" ]; then
             cp "${{ github.workspace }}/quran_final.keystore" android/app/quran_final.keystore
             echo "✅ تم العثور على ملف المفتاح في المستودع ونقله بنجاح!"
           else
-            echo "❌ خطأ: لم يتم العثور على ملف quran_final.keystore في جذر المستودع!"
+            echo "❌ خطأ: ملف quran_final.keystore غير موجود في جذر المستودع!"
             exit 1
           fi
 
-      - name: 💥 التطهير الشامل والقسري لجميع ملفات البناء (Total Purge)
+      - name: 💥 الحقن الصارم لـ SDK 34 في كود المصدر
         run: |
-          # 1. إجبار السيرفر على إعداد ملف المتغيرات بقيم المتجر المطلوبة
+          # 1. إجبار ملف variables.gradle على احتواء القيم الصحيحة
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -84,10 +84,16 @@ jobs:
           }
           EOF
 
-          # 2. استبدال قيم الـ SDK بـ 34 في كل ملفات البناء قسرياً داخل الـ Runner
-          find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.compileSdkVersion/34/g' {} +
-          find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.targetSdkVersion/34/g' {} +
-          find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.minSdkVersion/22/g' {} +
+          # 2. استبدال المتغيرات بنصوص برمجية ثابتة (Hardcoded) داخل ملف build.gradle الرئيسي للتطبيق
+          sed -i 's/rootProject.ext.compileSdkVersion/34/g' android/app/build.gradle
+          sed -i 's/rootProject.ext.targetSdkVersion/34/g' android/app/build.gradle
+          sed -i 's/rootProject.ext.minSdkVersion/22/g' android/app/build.gradle
+
+          # 3. تعديل ملف الـ Manifest الرئيسي للتطبيق لفرض الـ SDK صراحة عبر الـ XML
+          # سنقوم بحقن وسم uses-sdk بشكل صحيح كأول عنصر داخل <manifest>
+          sed -i 's|<manifest[^>]*>|&\n    <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" />|g' android/app/src/main/AndroidManifest.xml
+
+          echo "=== تمت عملية الحقن والتهيئة الصارمة لملف الـ Manifest والـ Gradle ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
@@ -98,7 +104,8 @@ jobs:
             -Pandroid.injected.signing.key.alias="quran_alias" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.build.compileSdkVersion=34 \
-            -Pandroid.injected.build.targetSdkVersion=34
+            -Pandroid.injected.build.targetSdkVersion=34 \
+            -Pandroid.injected.build.minSdkVersion=22
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
@@ -107,4 +114,3 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
-
