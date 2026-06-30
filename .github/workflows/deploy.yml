@@ -43,14 +43,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK and Force API 35
         uses: android-actions/setup-android@v3
-
-      - name: 📥 تحميل وتثبيت الـ Android SDK Platform 35 إجبارياً
-        run: |
-          # قبول التراخيص أولاً وتثبيت منصة أندرويد 15 وأدوات البناء الخاصة بها
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        with:
+          # هنا السر: إجبار الأداة على تحميل الحزم المطلوبة مباشرة في المسار الصحيح
+          packages: 'platforms;android-35 build-tools;35.0.0'
 
       - name: Sync Capacitor Android
         run: |
@@ -89,9 +86,10 @@ jobs:
           }
           EOF
 
-          # 2. ضبط خصائص الأندرويد
+          # 2. ضبط خصائص الأندرويد لتعطيل التحذيرات والتحقق الصارم
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
+          echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
 
           # 3. إعادة كتابة ملف android/app/build.gradle بالكامل وحل مشكلة الـ Namespace مع فرض SDK 35
           cat << 'EOF' > android/app/build.gradle
@@ -135,11 +133,11 @@ jobs:
           }
           EOF
 
-          # 4. كتابة الـ Manifest الصارم والنهائي بالـ SDK 35 الجديد لحل تداخل الاسم البرمجي
+          # 4. كتابة الـ Manifest الصارم والنهائي بالـ SDK 35 الجديد
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools">
+              xmlns:tools="http://tools.android.com/tools">
 
               <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="35" tools:overrideLibrary="*" />
 
@@ -179,7 +177,7 @@ jobs:
           </manifest>
           EOF
 
-          echo "=== تم تصفية الملفات وحل الـ Namespace وفرض SDK 35 بنجاح تام ==="
+          echo "=== تم تصفية الملفات وحل الـ Namespace وفرض SDK 35 بنجاح تام ==."
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
