@@ -31,7 +31,7 @@ jobs:
           # نقل ملف المفتاح المرفوع إلى داخل مجلد أندرويد
           cp quran_final.keystore android/
           
-          # تبديل الأيقونات
+          # تبديل الأيقونات بالقوة
           rm -rf android/app/src/main/res/mipmap-*
           mkdir -p android/app/src/main/res/mipmap-hdpi
           cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
@@ -65,7 +65,7 @@ jobs:
         run: |
           cd android
           
-          # 🛑 هنا السر: مسح وإعادة كتابة المتغيرات بعد الـ Sync مباشرة وقبل بناء التطبيق بثوانٍ
+          # تعديل ملف المتغيرات بعد الـ Sync مباشرة لضمان القيم
           rm -f variables.gradle
           cat << 'EOF' > variables.gradle
           ext {
@@ -85,18 +85,15 @@ jobs:
               cordovaAndroidVersion = '10.1.1'
           }
           EOF
-          
-          # تعديل مباشر وقاسٍ لملفات الـ build.gradle لضمان عدم قراءة رقم 1 نهائياً
-          find . -name "build.gradle" -exec sed -i 's/compileSdkVersion.*/compileSdkVersion 34/g' {} +
-          find . -name "build.gradle" -exec sed -i 's/targetSdkVersion.*/targetSdkVersion 34/g' {} +
-          find . -name "build.gradle" -exec sed -i 's/compileSdk.*/compileSdk 34/g' {} +
-          find . -name "build.gradle" -exec sed -i 's/targetSdk.*/targetSdk 34/g' {} +
 
+          # 🛑 السر الحاسم: تمرير قيم الـ SDK مباشرة كمعاملات إجبارية للمترجم لفرضها داخل الـ Manifest النهائي للحزمة
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.build.compileSdkVersion=34 \
+            -Pandroid.injected.build.targetSdkVersion=34
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
