@@ -26,17 +26,12 @@ jobs:
           mkdir -p www
           cp index.html www/
           
-          # 🛑 الحل الحاسم: إنشاء ملف التكوين الرسمي ببيانات الـ SDK المطلوبة قبل إرسالها للأندرويد
+          # إعداد ملف التكوين الأساسي
           cat << 'EOF' > capacitor.config.json
           {
             "appId": "com.qatan.quranoffline",
             "appName": "قرآن بدون نت",
             "webDir": "www",
-            "plugins": {
-              "SplashScreen": {
-                "launchShowDuration": 0
-              }
-            },
             "android": {
               "compileSdkVersion": 34,
               "targetSdkVersion": 34,
@@ -83,11 +78,35 @@ jobs:
       - name: Build and Sign Android App Bundle (AAB)
         run: |
           cd android
+          
+          # 🛑 الحل الحاسم: إجبار السيرفر على إنشاء ملف المتغيرات بالقيم المطلوبة للمتجر فوراً
+          cat << 'EOF' > variables.gradle
+          ext {
+              minSdkVersion = 22
+              compileSdkVersion = 34
+              targetSdkVersion = 34
+              androidxActivityVersion = '1.8.0'
+              androidxAppCompatVersion = '1.6.1'
+              androidxCoordinatorLayoutVersion = '1.2.0'
+              androidxCoreVersion = '1.12.0'
+              androidxFragmentVersion = '1.6.2'
+              coreSplashScreenVersion = '1.0.1'
+              androidxResourceInspectionVersion = '1.0.1'
+              junitVersion = '4.13.2'
+              androidxJunitVersion = '1.1.5'
+              androidxEspressoCoreVersion = '3.5.1'
+              cordovaAndroidVersion = '10.1.1'
+          }
+          EOF
+
+          # بناء التطبيق مع حقن قيم الـ SDK مباشرة داخل معلمات الـ Gradle كخط دفاع إضافي
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
-            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.build.compileSdkVersion=34 \
+            -Pandroid.injected.build.targetSdkVersion=34
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
@@ -96,4 +115,3 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
-
