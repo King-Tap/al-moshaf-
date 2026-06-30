@@ -64,7 +64,7 @@ jobs:
             exit 1
           fi
 
-      - name: 💥 تطهير شامل وفرض قيم التوافق لـ SDK 35
+      - name: 🛠️ إصلاح وتحديث الـ AGP ليتوافق مع SDK 35
         run: |
           # 1. إعداد ملف variables.gradle الرئيسي باستهداف SDK 35
           cat << 'EOF' > android/variables.gradle
@@ -86,12 +86,37 @@ jobs:
           }
           EOF
 
-          # 2. السحر كله هنا: إجبار Gradle على قبول SDK 35 دون اعتراض
+          # 2. كسر فحص التوافق القديم وتجاوز أخطاء الـ Compile
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
 
-          # 3. إعادة كتابة ملف android/app/build.gradle ليتوافق مع الإصدارات القديمة والحديثة معاً
+          # 3. تحديث الـ AGP لنسخة 8.1.0 في ملف build.gradle الرئيسي لحل عقدة الـ Aapt2 تماماً!
+          cat << 'EOF' > android/build.gradle
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.1.0'
+                  classpath 'com.google.gms:google-services:4.4.0'
+              }
+          }
+
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          task clean(type: Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
+
+          # 4. إعادة صياغة ملف android/app/build.gradle ليتوافق تماماً مع التحديث
           cat << 'EOF' > android/app/build.gradle
           apply plugin: 'com.android.application'
 
@@ -131,11 +156,11 @@ jobs:
           }
           EOF
 
-          # 4. كتابة الـ Manifest النهائي وتثبيت الـ SDK برمجياً في الـ Manifest المدمج أيضاً
+          # 5. تثبيت الـ Manifest النظيف لمنع التداخل
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools">
+              xmlns:tools="http://tools.android.com/tools">
 
               <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="35" tools:overrideLibrary="*" />
 
