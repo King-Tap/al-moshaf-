@@ -36,19 +36,6 @@ jobs:
           EOF
           
           npx cap add android
-          
-          # نقل ملف المفتاح المرفوع إلى داخل مجلد أندرويد
-          cp quran_final.keystore android/
-          
-          # تبديل الأيقونات بالقوة
-          rm -rf android/app/src/main/res/mipmap-*
-          mkdir -p android/app/src/main/res/mipmap-hdpi
-          cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
-          mkdir -p android/app/src/main/res/mipmap-mdpi && cp icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          mkdir -p android/app/src/main/res/mipmap-xhdpi && cp icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          mkdir -p android/app/src/main/res/mipmap-xxhdpi && cp icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          mkdir -p android/app/src/main/res/mipmap-xxxhdpi && cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -64,15 +51,20 @@ jobs:
           npx cap copy
           npx cap sync android
 
-      - name: Verify Keystore Integrity
+      - name: 🔐 فك تشفير ملف المفاتيح بأمان وصيانة المسار
         run: |
-          keytool -list -v \
-            -keystore android/quran_final.keystore \
-            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+          # فك تشفير النص وضمان كتابته بالكامل داخل مجلد أندرويد للتطبيق
+          echo "${{ secrets.MY_SECRET_BASE64 }}" | base64 --decode > android/app/quran_final.keystore
+          
+          # التحقق من حجم الملف للتأكد من أنه ليس فارغاً (أكبر من 0 بايت)
+          if [ ! -s android/app/quran_final.keystore ]; then
+            echo "❌ خطأ قاتل: ملف الـ Keystore تم فكه فارغاً! تأكد من نص Base64 في الـ Secrets."
+            exit 1
+          fi
 
       - name: 💥 التطهير الشامل والقسري لجميع ملفات البناء (Total Purge)
         run: |
-          # 1. تعديل ملف المتغيرات الرئيسي
+          # 1. تعديل ملف المتغيرات الرئيسي لضمان توجيه الـ SDK
           cat << 'EOF' > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -92,21 +84,16 @@ jobs:
           }
           EOF
 
-          # 2. الهجوم الكاسح: استبدال قيم الـ SDK بـ 34 في كل ملف build.gradle داخل المشروع وداخل مكتبات Node المرفقة برمجياً!
+          # 2. استبدال قيم الـ SDK بـ 34 في كل ملفات البناء قسرياً
           find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.compileSdkVersion/34/g' {} +
           find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.targetSdkVersion/34/g' {} +
           find . -name "build.gradle" -type f -exec sed -i 's/rootProject.ext.minSdkVersion/22/g' {} +
-          
-          # 3. تعديل يدوي مباشر داخل ملف الـ Manifest الرئيسي للتطبيق والـ Cordova احتياطاً لغلق الثغرة تماماً
-          find android/ -name "AndroidManifest.xml" -type f -exec sed -i 's|<application|<uses-sdk android:minSdkVersion="22" android:targetSdkVersion="34" />\n    <application|g' {} +
-
-          echo "=== تم تطهير كافة ملفات البناء والـ Manifest في المشروع بالكامل ==="
 
       - name: Build and Sign Android App Bundle (AAB)
         run: |
           cd android
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/quran_final.keystore \
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
