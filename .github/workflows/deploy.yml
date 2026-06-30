@@ -31,40 +31,11 @@ jobs:
           # نقل ملف المفتاح المرفوع إلى داخل مجلد أندرويد
           cp quran_final.keystore android/
           
-          # إجبار إصدار الشاشة الافتتاحية والـ SDK في ملف المتغيرات الرئيسي
-          rm -f android/variables.gradle
-          cat << 'EOF' > android/variables.gradle
-          ext {
-              minSdkVersion = 22
-              compileSdkVersion = 34
-              targetSdkVersion = 34
-              androidxActivityVersion = '1.8.0'
-              androidxAppCompatVersion = '1.6.1'
-              androidxCoordinatorLayoutVersion = '1.2.0'
-              androidxCoreVersion = '1.12.0'
-              androidxFragmentVersion = '1.6.2'
-              coreSplashScreenVersion = '1.0.1'
-              androidxResourceInspectionVersion = '1.0.1'
-              junitVersion = '4.13.2'
-              androidxJunitVersion = '1.1.5'
-              androidxEspressoCoreVersion = '3.5.1'
-              cordovaAndroidVersion = '10.1.1'
-          }
-          EOF
-          
-          # 🛑 تحديث حاسم وقاطع لجميع ملفات build.gradle لفرض الـ SDK 34 برمجياً ومنع قراءة القيمة 1
-          find android/ -name "build.gradle" -exec sed -i 's/compileSdkVersion.*/compileSdkVersion 34/g' {} +
-          find android/ -name "build.gradle" -exec sed -i 's/targetSdkVersion.*/targetSdkVersion 34/g' {} +
-          find android/ -name "build.gradle" -exec sed -i 's/compileSdk.*/compileSdk 34/g' {} +
-          find android/ -name "build.gradle" -exec sed -i 's/targetSdk.*/targetSdk 34/g' {} +
-
-          # تبديل الأيقونات بالقوة وتجنب أي خطأ في أبعاد الصور
+          # تبديل الأيقونات
           rm -rf android/app/src/main/res/mipmap-*
-          
           mkdir -p android/app/src/main/res/mipmap-hdpi
           cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
           cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
-          
           mkdir -p android/app/src/main/res/mipmap-mdpi && cp icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
           mkdir -p android/app/src/main/res/mipmap-xhdpi && cp icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
           mkdir -p android/app/src/main/res/mipmap-xxhdpi && cp icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
@@ -93,6 +64,34 @@ jobs:
       - name: Build and Sign Android App Bundle (AAB)
         run: |
           cd android
+          
+          # 🛑 هنا السر: مسح وإعادة كتابة المتغيرات بعد الـ Sync مباشرة وقبل بناء التطبيق بثوانٍ
+          rm -f variables.gradle
+          cat << 'EOF' > variables.gradle
+          ext {
+              minSdkVersion = 22
+              compileSdkVersion = 34
+              targetSdkVersion = 34
+              androidxActivityVersion = '1.8.0'
+              androidxAppCompatVersion = '1.6.1'
+              androidxCoordinatorLayoutVersion = '1.2.0'
+              androidxCoreVersion = '1.12.0'
+              androidxFragmentVersion = '1.6.2'
+              coreSplashScreenVersion = '1.0.1'
+              androidxResourceInspectionVersion = '1.0.1'
+              junitVersion = '4.13.2'
+              androidxJunitVersion = '1.1.5'
+              androidxEspressoCoreVersion = '3.5.1'
+              cordovaAndroidVersion = '10.1.1'
+          }
+          EOF
+          
+          # تعديل مباشر وقاسٍ لملفات الـ build.gradle لضمان عدم قراءة رقم 1 نهائياً
+          find . -name "build.gradle" -exec sed -i 's/compileSdkVersion.*/compileSdkVersion 34/g' {} +
+          find . -name "build.gradle" -exec sed -i 's/targetSdkVersion.*/targetSdkVersion 34/g' {} +
+          find . -name "build.gradle" -exec sed -i 's/compileSdk.*/compileSdk 34/g' {} +
+          find . -name "build.gradle" -exec sed -i 's/targetSdk.*/targetSdk 34/g' {} +
+
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
@@ -106,3 +105,4 @@ jobs:
           packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
+
