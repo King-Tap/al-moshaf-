@@ -23,7 +23,29 @@ jobs:
         run: |
           mkdir -p www
           cp index.html www/
+          
+          # 🚀 خطوة أساسية: تحويل روابط السيرفر داخل الكود إلى https لمنع حظر أندرويد الصارم
+          sed -i 's|http://api.alquran.cloud|https://api.alquran.cloud|g' www/index.html
+
+          # تهيئة كاباسيتور باستخدام اسم الحزمة الصحيح تماماً وتفعيل الـ cleartext
           npx cap init "قرآن بدون نت" "com.qatan.quraniffline" --web-dir www
+          
+          # إعداد التكوين لكاباسيتور للسماح بالاتصالات الخارجية والاختلاط الآمن
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.qatan.quraniffline",
+            "appName": "قرآن بدون نت",
+            "webDir": "www",
+            "server": {
+              "cleartext": true,
+              "allowNavigation": [
+                "api.alquran.cloud",
+                "*.alquran.cloud"
+              ]
+            }
+          }
+          EOF
+
           npx cap add android
           
           # مسح أيقونات الأندرويد الافتراضية تماماً
@@ -40,9 +62,56 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xxhdpi && cp icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi && cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
+      - name: 📥 حقن صلاحيات الإنترنت والـ Cleartext داخل الـ AndroidManifest لمنع حظر الـ APIs
+        run: |
+          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="@string/app_name"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:supportsRtl="true"
+                  android:usesCleartextTraffic="true"
+                  android:theme="@style/AppTheme">
+
+                  <activity
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+                      android:name="com.qatan.quraniffline.MainActivity"
+                      android:label="@string/title_activity_main"
+                      android:exported="true"
+                      android:launchMode="singleTop">
+
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+
+                  </activity>
+
+                  <provider
+                      android:name="androidx.core.content.FileProvider"
+                      android:authorities="${applicationId}.fileprovider"
+                      android:exported="false"
+                      android:grantUriPermissions="true">
+                      <meta-data
+                          android:name="android.support.FILE_PROVIDER_PATHS"
+                          android:resource="@xml/file_paths" />
+                  </provider>
+
+              </application>
+          </manifest>
+          EOF
+
       - name: Final Compilation
         run: |
           npx cap copy
+          npx cap sync android
           cd android && ./gradlew assembleDebug
 
       - name: Download APK
