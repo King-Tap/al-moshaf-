@@ -50,6 +50,18 @@ jobs:
           
           npx cap add android
 
+          # 🎨 [تعديل الأيقونة] مسح أيقونات الأندرويد الافتراضية وحقن صورتك الخاصة بالقوة
+          rm -rf android/app/src/main/res/mipmap-*
+          
+          mkdir -p android/app/src/main/res/mipmap-hdpi
+          cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+          
+          mkdir -p android/app/src/main/res/mipmap-mdpi && cp icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          mkdir -p android/app/src/main/res/mipmap-xhdpi && cp icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          mkdir -p android/app/src/main/res/mipmap-xxhdpi && cp icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          mkdir -p android/app/src/main/res/mipmap-xxxhdpi && cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -182,7 +194,7 @@ jobs:
               <style name="Theme.SplashScreen" parent="Theme.SplashScreen.IconBackground">
                   <item name="windowSplashScreenBackground">@android:color/white</item>
                   <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-                  <item name="postSplashScreenTheme">@style/AppTheme</item>
+                  <item name="postSplashScreenTheme">@style/AppTheme</style>
               </style>
           </resources>
           EOF
