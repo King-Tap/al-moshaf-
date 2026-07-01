@@ -99,12 +99,12 @@ jobs:
           }
           EOF
 
-          # 2. تجاوز أخطاء التوافق وحظر الـ Cleartext في الـ Properties
+          # 2. كسر فحص التوافق القديم في الـ Properties
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
 
-          # 3. تحديث الـ AGP لنسخة 8.1.0 في ملف build.gradle الرئيسي لحل خطأ الموارد
+          # 3. تحديث الـ AGP لنسخة 8.1.0 في ملف build.gradle الرئيسي
           cat << 'EOF' > android/build.gradle
           buildscript {
               repositories {
@@ -129,7 +129,7 @@ jobs:
           }
           EOF
 
-          # 4. إعادة بناء ملف android/app/build.gradle بالاسم البرمجي الصحيح com.qatan.quraniffline
+          # 4. إعادة بناء ملف android/app/build.gradle بـ Version Code ديناميكي مع رقم بناء الجيت هب
           cat << 'EOF' > android/app/build.gradle
           apply plugin: 'com.android.application'
 
@@ -142,8 +142,8 @@ jobs:
                   applicationId "com.qatan.quraniffline"
                   minSdkVersion 22
                   targetSdkVersion 35
-                  versionCode 1
-                  versionName "1.0"
+                  versionCode ${{ github.run_number }}
+                  versionName "1.1"
                   testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
               }
               
@@ -193,6 +193,7 @@ jobs:
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:tools="http://schemas.android.com/tools">
 
+              <!-- منح الصلاحيات للـ APIs الخارجية في نسخة المتجر الرسمية -->
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
