@@ -32,10 +32,10 @@ jobs:
           # تحويل الروابط إلى https تلقائياً لضمان التوافق مع نسخة الـ Release المرفوعة
           sed -i 's|http://api.alquran.cloud|https://api.alquran.cloud|g' www/index.html
 
-          # تهيئة التكوين للتوافق التام مع البناء الأساسي
+          # تهيئة التكوين للتوافق التام مع الاسم القديم
           cat << 'EOF' > capacitor.config.json
           {
-            "appId": "com.qatan.quraniffline",
+            "appId": "com.qatan.quranoffline",
             "appName": "قرآن بدون نت",
             "webDir": "www",
             "server": {
@@ -129,17 +129,17 @@ jobs:
           }
           EOF
 
-          # 4. إعادة بناء ملف android/app/build.gradle بـ Version Code ديناميكي مع رقم بناء الجيت هب
+          # 4. إعادة بناء ملف android/app/build.gradle بالاسم البرمجي القديم com.qatan.quranoffline
           cat << 'EOF' > android/app/build.gradle
           apply plugin: 'com.android.application'
 
           android {
-              namespace "com.qatan.quraniffline"
+              namespace "com.qatan.quranoffline"
               compileSdkVersion 35
               buildToolsVersion "35.0.0"
               
               defaultConfig {
-                  applicationId "com.qatan.quraniffline"
+                  applicationId "com.qatan.quranoffline"
                   minSdkVersion 22
                   targetSdkVersion 35
                   versionCode ${{ github.run_number }}
@@ -187,13 +187,12 @@ jobs:
           </resources>
           EOF
 
-          # 6. تثبيت الـ Manifest النهائي والشامل بصلاحيات الإنترنت الصريحة واسم حزمتك الصحيح com.qatan.quraniffline
+          # 6. تثبيت الـ Manifest بالاسم القديم والصحيح com.qatan.quranoffline
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:tools="http://schemas.android.com/tools">
 
-              <!-- منح الصلاحيات للـ APIs الخارجية في نسخة المتجر الرسمية -->
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -211,7 +210,7 @@ jobs:
 
                   <activity
                       android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
-                      android:name="com.qatan.quraniffline.MainActivity"
+                      android:name="com.qatan.quranoffline.MainActivity"
                       android:label="@string/title_activity_main"
                       android:exported="true"
                       android:launchMode="singleTop">
@@ -241,7 +240,7 @@ jobs:
         run: |
           cd android
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/quran_final.keystore \
+            -Pandroid.injected.signing.store.file=${{ workspace }}/android/app/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
@@ -250,7 +249,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
-          packageName: "com.qatan.quraniffline"
+          packageName: "com.qatan.quranoffline"
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           tracks: internal
 
