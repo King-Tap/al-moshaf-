@@ -28,12 +28,12 @@ jobs:
           sed -i 's|http://api.alquran.cloud|https://api.alquran.cloud|g' www/index.html
 
           # تهيئة كاباسيتور باستخدام اسم الحزمة الصحيح تماماً وتفعيل الـ cleartext
-          npx cap init "قرآن بدون نت" "com.qatan.quraniffline" --web-dir www
+          npx cap init "قرآن بدون نت" "com.qatan.quranoffline" --web-dir www
           
           # إعداد التكوين لكاباسيتور للسماح بالاتصالات الخارجية والاختلاط الآمن
           cat << 'EOF' > capacitor.config.json
           {
-            "appId": "com.qatan.quraniffline",
+            "appId": "com.qatan.quranoffline",
             "appName": "قرآن بدون نت",
             "webDir": "www",
             "server": {
