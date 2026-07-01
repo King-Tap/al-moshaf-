@@ -79,7 +79,7 @@ jobs:
           npx cap copy
           npx cap sync android
 
-      - name: 🔐 نقل وتأمين ملف المفتاح من جذر المستودع
+      - name: 🔐 نقل وتأمين ملف المفتاح إلى داخل مجلد الـ app
         run: |
           if [ -f "quran_final.keystore" ]; then
             cp quran_final.keystore android/app/quran_final.keystore
@@ -203,7 +203,7 @@ jobs:
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools">
+              xmlns:tools="http://tools.android.com/tools">
 
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -252,7 +252,7 @@ jobs:
         run: |
           cd android
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=app/quran_final.keystore \
+            -Pandroid.injected.signing.store.file="${{ github.workspace }}/android/app/quran_final.keystore" \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
