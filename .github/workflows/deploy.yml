@@ -240,7 +240,7 @@ jobs:
         run: |
           cd android
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=${{ workspace }}/android/app/quran_final.keystore \
+            -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
