@@ -50,7 +50,7 @@ jobs:
           
           npx cap add android
 
-          # 🎨 [تعديل الأيقونة] مسح أيقونات الأندرويد الافتراضية وحقن صورتك الخاصة بالقوة
+          # 🎨 مسح أيقونات الأندرويد الافتراضية وحقن صورتك الخاصة بالقوة
           rm -rf android/app/src/main/res/mipmap-*
           
           mkdir -p android/app/src/main/res/mipmap-hdpi
@@ -81,8 +81,8 @@ jobs:
 
       - name: 🔐 نقل وتأمين ملف المفتاح من جذر المستودع
         run: |
-          if [ -f "${{ github.workspace }}/quran_final.keystore" ]; then
-            cp "${{ github.workspace }}/quran_final.keystore" android/app/quran_final.keystore
+          if [ -f "quran_final.keystore" ]; then
+            cp quran_final.keystore android/app/quran_final.keystore
             echo "✅ تم نقل ملف المفتاح بنجاح!"
           else
             echo "❌ خطأ: لم يتم العثور على ملف quran_final.keystore في جذر المستودع!"
@@ -194,7 +194,7 @@ jobs:
               <style name="Theme.SplashScreen" parent="Theme.SplashScreen.IconBackground">
                   <item name="windowSplashScreenBackground">@android:color/white</item>
                   <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-                  <item name="postSplashScreenTheme">@style/AppTheme</style>
+                  <item name="postSplashScreenTheme">@style/AppTheme</item>
               </style>
           </resources>
           EOF
@@ -252,7 +252,7 @@ jobs:
         run: |
           cd android
           ./gradlew bundleRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/android/app/quran_final.keystore \
+            -Pandroid.injected.signing.store.file=app/quran_final.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="quran_alias" \
             -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
